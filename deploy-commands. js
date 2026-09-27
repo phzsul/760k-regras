@@ -1,0 +1,138 @@
+const {
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  PermissionFlagsBits
+} = require("discord.js");
+
+require("dotenv").config();
+
+const commands = [
+  // 📜 REGRAS
+  new SlashCommandBuilder()
+    .setName("regras")
+    .setDescription("Envia as regras do servidor"),
+
+  // 📢 ANÚNCIO
+  new SlashCommandBuilder()
+    .setName("anunciar")
+    .setDescription("Envia um anúncio")
+    .addStringOption(option =>
+      option
+        .setName("mensagem")
+        .setDescription("Mensagem do anúncio")
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(
+      PermissionFlagsBits.ManageGuild
+    ),
+
+  // 🧹 LIMPAR
+  new SlashCommandBuilder()
+    .setName("limpar")
+    .setDescription("Apaga mensagens do canal")
+    .addIntegerOption(option =>
+      option
+        .setName("quantidade")
+        .setDescription("Quantidade de mensagens")
+        .setMinValue(1)
+        .setMaxValue(100)
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(
+      PermissionFlagsBits.ManageMessages
+    ),
+
+  // 👢 KICK
+  new SlashCommandBuilder()
+    .setName("kick")
+    .setDescription("Expulsa um membro")
+    .addUserOption(option =>
+      option
+        .setName("membro")
+        .setDescription("Membro que será expulso")
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName("motivo")
+        .setDescription("Motivo da expulsão")
+    )
+    .setDefaultMemberPermissions(
+      PermissionFlagsBits.KickMembers
+    ),
+
+  // 🔨 BAN
+  new SlashCommandBuilder()
+    .setName("ban")
+    .setDescription("Bane um membro")
+    .addUserOption(option =>
+      option
+        .setName("membro")
+        .setDescription("Membro que será banido")
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName("motivo")
+        .setDescription("Motivo do banimento")
+    )
+    .setDefaultMemberPermissions(
+      PermissionFlagsBits.BanMembers
+    ),
+
+  // 🔇 MUTE
+  new SlashCommandBuilder()
+    .setName("mute")
+    .setDescription("Silencia um membro")
+    .addUserOption(option =>
+      option
+        .setName("membro")
+        .setDescription("Membro que será silenciado")
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option
+        .setName("minutos")
+        .setDescription("Duração em minutos")
+        .setMinValue(1)
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(
+      PermissionFlagsBits.ModerateMembers
+    ),
+
+  // 👤 USERINFO
+  new SlashCommandBuilder()
+    .setName("userinfo")
+    .setDescription("Mostra informações de um membro")
+    .addUserOption(option =>
+      option
+        .setName("membro")
+        .setDescription("Membro")
+    )
+].map(command => command.toJSON());
+
+const rest = new REST({ version: "10" })
+  .setToken(process.env.DISCORD_TOKEN);
+
+(async () => {
+  try {
+    console.log("🔄 Registrando comandos...");
+
+    await rest.put(
+      Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,
+        process.env.GUILD_ID
+      ),
+      {
+        body: commands
+      }
+    );
+
+    console.log("✅ Comandos registrados com sucesso!");
+  } catch (error) {
+    console.error("❌ Erro ao registrar comandos:");
+    console.error(error);
+  }
+})();
