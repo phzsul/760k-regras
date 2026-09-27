@@ -1,0 +1,297 @@
+const {
+  Client,
+  GatewayIntentBits,
+  PermissionsBitField,
+  EmbedBuilder
+} = require("discord.js");
+
+require("dotenv").config();
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages
+  ]
+});
+
+// BOT ONLINE
+client.once("ready", () => {
+  console.log(`✅ Bot online como ${client.user.tag}`);
+});
+
+// 👋 BOAS-VINDAS
+client.on("guildMemberAdd", async (member) => {
+  const channel = member.guild.channels.cache.get(
+    process.env.WELCOME_CHANNEL_ID
+  );
+
+  if (!channel) return;
+
+  const embed = new EmbedBuilder()
+    .setColor("#ff0000")
+    .setTitle("👋 Bem-vindo(a) à Equipe BMW!")
+    .setDescription(
+      `Olá, ${member}! Seja muito bem-vindo(a) ao servidor!\n\n📜 Não esqueça de ler as regras.`
+    )
+    .setThumbnail(member.user.displayAvatarURL())
+    .setTimestamp();
+
+  await channel.send({ embeds: [embed] }).catch(console.error);
+});
+
+// COMANDOS
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  // 📜 REGRAS
+  if (interaction.commandName === "regras") {
+    const embed = new EmbedBuilder()
+      .setColor("#ff0000")
+      .setTitle("📜 REGRAS DO SERVIDOR")
+      .setDescription(`
+**1. 🤝 Respeito**
+Respeite todos os membros do servidor.
+
+**2. 🚫 Sem spam**
+Não faça spam, flood ou fique marcando pessoas sem necessidade.
+
+**3. 📢 Divulgação**
+Não divulgue outros servidores sem autorização da Staff.
+
+**4. 🔞 Conteúdo impróprio**
+Não envie conteúdo sexual, explícito ou inadequado.
+
+**5. ⚠️ Sem brigas**
+Evite provocações, discussões e confusões.
+
+**6. 👤 Nomes e perfis**
+Não utilize nomes, fotos ou status ofensivos.
+
+**7. 🛡️ Respeite a Staff**
+Siga as orientações da equipe de moderação.
+
+**8. 🔒 Privacidade**
+Não divulgue informações pessoais de outros membros.
+
+**9. 📌 Canais**
+Utilize cada canal de acordo com sua finalidade.
+
+**10. 👑 Administração**
+A administração poderá tomar medidas contra comportamentos que prejudiquem o servidor.
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ **Ao permanecer no servidor, você concorda com estas regras.**
+`)
+      .setFooter({
+        text: "Equipe BMW • Regras do servidor"
+      })
+      .setTimestamp();
+
+    return interaction.reply({
+      embeds: [embed]
+    });
+  }
+
+  // 📢 ANÚNCIO
+  if (interaction.commandName === "anunciar") {
+    if (
+      !interaction.memberPermissions.has(
+        PermissionsBitField.Flags.ManageGuild
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Você não tem permissão para usar este comando.",
+        ephemeral: true
+      });
+    }
+
+    const mensagem = interaction.options.getString("mensagem");
+
+    const embed = new EmbedBuilder()
+      .setColor("#ff0000")
+      .setTitle("📢 ANÚNCIO")
+      .setDescription(mensagem)
+      .setFooter({
+        text: `Enviado por ${interaction.user.tag}`
+      })
+      .setTimestamp();
+
+    await interaction.channel.send({
+      embeds: [embed]
+    });
+
+    return interaction.reply({
+      content: "✅ Anúncio enviado!",
+      ephemeral: true
+    });
+  }
+
+  // 🧹 LIMPAR
+  if (interaction.commandName === "limpar") {
+    if (
+      !interaction.memberPermissions.has(
+        PermissionsBitField.Flags.ManageMessages
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Você não tem permissão.",
+        ephemeral: true
+      });
+    }
+
+    const quantidade =
+      interaction.options.getInteger("quantidade");
+
+    const mensagens = await interaction.channel.bulkDelete(
+      quantidade,
+      true
+    );
+
+    return interaction.reply({
+      content: `🧹 ${mensagens.size} mensagens foram apagadas.`,
+      ephemeral: true
+    });
+  }
+
+  // 👢 KICK
+  if (interaction.commandName === "kick") {
+    if (
+      !interaction.memberPermissions.has(
+        PermissionsBitField.Flags.KickMembers
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Você não tem permissão.",
+        ephemeral: true
+      });
+    }
+
+    const membro =
+      interaction.options.getMember("membro");
+
+    const motivo =
+      interaction.options.getString("motivo") ||
+      "Sem motivo informado.";
+
+    if (!membro || !membro.kickable) {
+      return interaction.reply({
+        content: "❌ Não consigo expulsar esse membro.",
+        ephemeral: true
+      });
+    }
+
+    await membro.kick(motivo);
+
+    return interaction.reply(
+      `👢 **${membro.user.tag}** foi expulso.\nMotivo: ${motivo}`
+    );
+  }
+
+  // 🔨 BAN
+  if (interaction.commandName === "ban") {
+    if (
+      !interaction.memberPermissions.has(
+        PermissionsBitField.Flags.BanMembers
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Você não tem permissão.",
+        ephemeral: true
+      });
+    }
+
+    const membro =
+      interaction.options.getMember("membro");
+
+    const motivo =
+      interaction.options.getString("motivo") ||
+      "Sem motivo informado.";
+
+    if (!membro || !membro.bannable) {
+      return interaction.reply({
+        content: "❌ Não consigo banir esse membro.",
+        ephemeral: true
+      });
+    }
+
+    await membro.ban({
+      reason: motivo
+    });
+
+    return interaction.reply(
+      `🔨 **${membro.user.tag}** foi banido.\nMotivo: ${motivo}`
+    );
+  }
+
+  // 🔇 MUTE
+  if (interaction.commandName === "mute") {
+    if (
+      !interaction.memberPermissions.has(
+        PermissionsBitField.Flags.ModerateMembers
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Você não tem permissão.",
+        ephemeral: true
+      });
+    }
+
+    const membro =
+      interaction.options.getMember("membro");
+
+    const minutos =
+      interaction.options.getInteger("minutos");
+
+    if (!membro || !membro.moderatable) {
+      return interaction.reply({
+        content: "❌ Não consigo silenciar esse membro.",
+        ephemeral: true
+      });
+    }
+
+    await membro.timeout(
+      minutos * 60 * 1000,
+      "Mute aplicado pela Staff"
+    );
+
+    return interaction.reply(
+      `🔇 **${membro.user.tag}** foi silenciado por **${minutos} minuto(s)**.`
+    );
+  }
+
+  // 👤 USERINFO
+  if (interaction.commandName === "userinfo") {
+    const membro =
+      interaction.options.getMember("membro") ||
+      interaction.member;
+
+    const embed = new EmbedBuilder()
+      .setColor("#ff0000")
+      .setTitle("👤 INFORMAÇÕES DO MEMBRO")
+      .setThumbnail(
+        membro.user.displayAvatarURL()
+      )
+      .addFields(
+        {
+          name: "Usuário",
+          value: `${membro.user}`,
+          inline: true
+        },
+        {
+          name: "ID",
+          value: membro.id,
+          inline: true
+        }
+      )
+      .setTimestamp();
+
+    return interaction.reply({
+      embeds: [embed]
+    });
+  }
+});
+
+// LOGIN
+client.login(process.env.DISCORD_TOKEN);
